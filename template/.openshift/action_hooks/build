@@ -1,0 +1,1 @@
+# Note the compiled application is located at $OPENSHIFT_GO_DIR/deploys/$CURRENT_GIT_HEAD/bin/ and the compiled packages are located at $OPENSHIFT_GO_DIR/deploys/$CURRENT_GIT_HEAD/pkg/linux_amd64/

@@ -1,0 +1,1 @@
+For information about OpenShift's action hooks see: [http://openshift.github.io/documentation/oo_user_guide.html#action-hooks](http://openshift.github.io/documentation/oo_user_guide.html#action-hooks)

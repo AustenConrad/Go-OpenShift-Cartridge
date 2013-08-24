@@ -1,0 +1,21 @@
+#!/bin/bash
+
+# Initialize variables.
+export GOVERSION=1.1.2
+echo $GOVERSION > $OPENSHIFT_GO_DIR/env/GOVERSION
+ 
+# Download the Go source for Linux amd64
+cd $OPENSHIFT_GO_DIR
+wget http://go.googlecode.com/files/go$GOVERSION.linux-amd64.tar.gz
+
+# Untar the source and change into it's directory.
+tar -xzf go$GOVERSION.linux-amd64.tar.gz
+rm go$GOVERSION.linux-amd64.tar.gz
+cd go
+
+# Add Go's bin to PATH
+PATH+=":`pwd`/bin"
+
+# Set the GOROOT
+export GOROOT=`pwd`	
+echo $GOROOT > $OPENSHIFT_GO_DIR/env/GOROOT

@@ -1,0 +1,175 @@
+#!/bin/bash
+
+# Lifecycle information can be found in: http://openshift.github.io/documentation/oo_cartridge_developers_guide.html#openshift-builds
+
+# Exit on errors.
+set -e
+
+# Update the $CURRENT_GIT_HEAD variable.
+function update-configuration() {
+
+    # Lookup the current GIT head hash. This is used as the directory name for the new deploy.
+    cd git/$OPENSHIFT_GEAR_NAME.git
+    export CURRENT_GIT_HEAD=`git rev-parse HEAD`
+    echo $CURRENT_GIT_HEAD > $OPENSHIFT_GO_DIR/env/CURRENT_GIT_HEAD
+
+}
+
+# Setup a clean Go build environment.
+function pre-build() {
+
+    client_message "Setting up a clean Go build environment..."
+
+    # Create a clean Go build environment. To save storage space, we syslink the '$GOPATH/src' directory to the source repository instead of copying it.
+    cd $OPENSHIFT_GO_DIR
+    mkdir -p deploys/$CURRENT_GIT_HEAD/bin
+    mkdir -p deploys/$CURRENT_GIT_HEAD/pkg
+    ln -s $OPENSHIFT_REPO_DIR deploys/$CURRENT_GIT_HEAD/src
+
+    # Set the GOPATH.
+    cd deploys/$CURRENT_GIT_HEAD
+    export GOPATH=`pwd`
+    echo $GOPATH > $OPENSHIFT_GO_DIR/env/GOPATH
+
+    client_message "Go build environment ready for build $CURRENT_GIT_HEAD of Go application '$GOAPP'."
+}
+
+# Build the Go Application and all of it's packages.
+function build() {
+
+    client_message "Building Go Application '$GOAPP' git build $CURRENT_GIT_HEAD..."
+
+    # Find every Go package or 'main' programs to install. Per the design of Go, packages named 'main' will be an 
+    # executable stored in $GOPATH/bin with all other packages compiled and stored in $GOPATH/pkg
+    go install ./...
+
+    # Verify that a Go Application was compiled. I.E. had the package 'main' so that go install puts it in $GOPATH/bin
+    if [ `ls -1 bin/ | wc -l` = 0 ]; then 
+        client_result "Your codebase needs to contain an application. I.E. package main"
+        exit 1
+    # Verify that only one Go Application was compiled. I.E. had the package 'main'.
+    elif [  ! `ls -1 bin/ | wc -l` = 1 ]; then 
+        client_result "Your codebase should only contain one application. I.E. you have multiple main packages."
+        exit 1
+    fi
+
+    # Set the Go Application to bootstrap.
+    GOAPP=`ls -1 bin/`
+    echo $GOAPP > $OPENSHIFT_GO_DIR/env/GOAPP
+
+    client_message "Go Application '$GOAPP' git build $CURRENT_GIT_HEAD was successful."
+
+}
+
+function deploy() {
+    echo
+}
+
+function post-deploy() {
+    echo
+}
+
+# Your cartridge and the packaged software needs to re-read their configuration information (this operation will only be called if your cartridge is running)
+function reload() {
+    echo
+}
+
+# Start the Go Application.
+function start() {
+
+    client_message "Starting Go application '$GOAPP' git build $CURRENT_GIT_HEAD ..."  
+    
+    # Start the Go Application
+    nohup $OPENSHIFT_GO_DIR/deploys/$CURRENT_GIT_HEAD/bin/$GOAPP > $OPENSHIFT_GO_LOG_DIR/$GOAPP.log 
+
+    # Verify the Go Application is running.
+    if [ "`pgrep $GOAPP`" ]; then 
+        client_result  "Go application '$GOAPP' git version $CURRENT_GIT_HEAD successfully started." > $OPENSHIFT_GO_LOG_DIR/$GOAPP.log 
+    else 
+        client_result "ERROR: Go application '$GOAPP' git version $CURRENT_GIT_HEAD failed to start." > $OPENSHIFT_GO_LOG_DIR/$GOAPP.log 
+        exit 1
+    fi
+
+}
+
+# Stop the Go Application.
+function stop() {
+    pkill $GOAPP
+}
+
+# Restart the Go Application.
+function restart() {
+    stop
+    start
+}
+
+# status - Returns an 0 exit status if the cartridge code is running.
+function status() {
+
+    # Verify the Go Application is running.
+    if [ "`pgrep $GOAPP`" ]; then 
+        client_result  "Go application '$GOAPP' git version $CURRENT_GIT_HEAD is running." > $OPENSHIFT_GO_LOG_DIR/$GOAPP.log 
+        exit 0
+    else 
+        client_result "Go application '$GOAPP' git version $CURRENT_GIT_HEAD is not currently running." > $OPENSHIFT_GO_LOG_DIR/$GOAPP.log 
+        exit 1
+    fi
+}
+
+# Clean up previous Go Application builds.
+function tidy() {
+
+    # Clean up previous application builds.
+    client_message "Cleaning up previous builds of the application..."
+    DIRARRAY=`ls -1 $OPENSHIFT_GO_DIR/deploys/`
+    for dir in $DIRARRAY; do
+        if [ ! "$dir" = $CURRENT_GIT_HEAD ]; then
+
+            # Delete previous executables.
+            rm -Rf $OPENSHIFT_GO_DIR/deploys/$dir/bin
+
+            # Delete previous packages.
+            rm -Rf $OPENSHIFT_GO_DIR/deploys/$dir/pkg
+        fi
+    done
+    client_message "Previous builds removed."
+
+}
+
+# pre-snapshot - Prepare the cartridge for a snapshot, e.g. dump database to flat file.
+function pre-snapshot() {
+    echo
+}
+
+# post-snapshot - Clean up the cartridge after snapshot, e.g. remove database dump file
+function post-snapshot() {
+    echo
+}
+
+# pre-restore - Prepare the cartridge for restore
+function pre-restore() {
+    echo
+}
+
+# post-restore - Clean up the cartridge after being restored, load database with data from flat file
+function post-restore() {
+    echo
+}
+
+# Signal the packaged software to perform a thread dump
+function threaddump() {
+    echo
+}
+
+# Read Command Line Inputs.
+case "$1" in
+    start)               start       ;;
+    restart|graceful)    restart     ;;
+    graceful-stop|stop)  stop        ;;
+    status)              status      ;;
+    build)               build       ;;
+    pre-build)           pre-build   ;;
+    post-deploy)         post-deploy ;;
+    tidy)                tidy        ;;
+    *) exit 0;
+esac
