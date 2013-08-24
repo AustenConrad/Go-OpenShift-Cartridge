@@ -1,3 +1,5 @@
+# NOT READY FOR PRODUCTION USE YET. PLEASE CHECK BACK LATER.
+
 # Go-OpenShift-Cartridge
 
 This is an [OpenShift](https://www.openshift.com) [cartridge](https://www.openshift.com/developers/do-it-yourself) for natively deploying applications written in [Go](http://golang.org). 
