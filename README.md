@@ -4,11 +4,11 @@
 
 This is an [OpenShift](https://www.openshift.com) [cartridge](https://www.openshift.com/developers/do-it-yourself) for natively deploying applications written in [Go](http://golang.org). 
 
-The implementation adheres to Go's native build and development patterns. As long as your source only has one application, I.E. 'package main', then you're ready to roll. If your app handles web traffic it should listen using the environment variables OPENSHIFT_GO_IP and OPENSHIFT_GO_PORT. See the [template/sample/app.go](https://github.com/AustenConrad/Go-OpenShift-Cartridge/blob/master/template/sample/app.go) file for an example.
+The implementation adheres to Go's native build and development patterns. As long as your source only has one application, I.E. 'package main', then you're ready to roll. If your app handles web traffic it should listen using the environment variables 'OPENSHIFT_GO_IP' and 'OPENSHIFT_GO_PORT'. See the [template/sample/app.go](https://github.com/AustenConrad/Go-OpenShift-Cartridge/blob/master/template/sample/app.go) file for an example.
 
 
 ## Sample web server.
-NOTE: the host and port are exposed to the application as $HOST and $PORT.
+NOTE: the host and port are exposed to the application as $IP and $PORT.
 ```Go
 package main
 

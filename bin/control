@@ -5,13 +5,21 @@
 # Exit on errors.
 set -e
 
-# Update the $CURRENT_GIT_HEAD variable.
+source $OPENSHIFT_CARTRIDGE_SDK_BASH # Can access client_message and client_result commands.
+
+# Read each cartridge environment variable stored on disk into an environment variable for the current shell.
+FILEARRAY=`ls -1 $OPENSHIFT_GO_DIR/env`
+for file in $FILEARRAY; do 
+    export $file=`cat $OPENSHIFT_GO_DIR/env/$file`; 
+done
+
+# Update the $CURRENT_GIT_HEAD_HASH environment variable.
 function update-configuration() {
 
     # Lookup the current GIT head hash. This is used as the directory name for the new deploy.
-    cd git/$OPENSHIFT_GEAR_NAME.git
-    export CURRENT_GIT_HEAD=`git rev-parse HEAD`
-    echo $CURRENT_GIT_HEAD > $OPENSHIFT_GO_DIR/env/CURRENT_GIT_HEAD
+    cd $OPENSHIFT_HOMEDIR/git/$OPENSHIFT_APP_NAME.git
+    export CURRENT_GIT_HEAD_HASH=`git rev-parse HEAD`
+    echo $CURRENT_GIT_HEAD_HASH > $OPENSHIFT_GO_DIR/env/CURRENT_GIT_HEAD_HASH
 
 }
 
@@ -20,30 +28,34 @@ function pre-build() {
 
     client_message "Setting up a clean Go build environment..."
 
-    # Create a clean Go build environment. To save storage space, we syslink the '$GOPATH/src' directory to the source repository instead of copying it.
+    # Create a clean Go build environment where the src directory is a symbolic link to the source repository to save hard disk space.
     cd $OPENSHIFT_GO_DIR
-    mkdir -p deploys/$CURRENT_GIT_HEAD/bin
-    mkdir -p deploys/$CURRENT_GIT_HEAD/pkg
-    ln -s $OPENSHIFT_REPO_DIR deploys/$CURRENT_GIT_HEAD/src
+    mkdir -p deploys/$CURRENT_GIT_HEAD_HASH/bin
+    mkdir -p deploys/$CURRENT_GIT_HEAD_HASH/pkg
+    ln -s $OPENSHIFT_REPO_DIR deploys/$CURRENT_GIT_HEAD_HASH/src
 
     # Set the GOPATH.
-    cd deploys/$CURRENT_GIT_HEAD
+    cd deploys/$CURRENT_GIT_HEAD_HASH
     export GOPATH=`pwd`
     echo $GOPATH > $OPENSHIFT_GO_DIR/env/GOPATH
 
-    client_message "Go build environment ready for build $CURRENT_GIT_HEAD of Go application '$GOAPP'."
+    client_message "Go build environment ready for building Go application version: $CURRENT_GIT_HEAD_HASH."
+
 }
 
 # Build the Go Application and all of it's packages.
 function build() {
 
-    client_message "Building Go Application '$GOAPP' git build $CURRENT_GIT_HEAD..."
+    client_message "Building Go Application version $CURRENT_GIT_HEAD_HASH ..."
 
     # Find every Go package or 'main' programs to install. Per the design of Go, packages named 'main' will be an 
     # executable stored in $GOPATH/bin with all other packages compiled and stored in $GOPATH/pkg
-    go install ./...
+    # Verify that Go is in the PATH.
+    cd $OPENSHIFT_GO_DIR/deploys/$CURRENT_GIT_HEAD_HASH/src
+    $GOROOT/bin/go install ./...
 
-    # Verify that a Go Application was compiled. I.E. had the package 'main' so that go install puts it in $GOPATH/bin
+    # Verify that a Go Application was compiled. I.E. had the package 'main' so that go install puts it in $GOPATH/bin.
+    cd $OPENSHIFT_GO_DIR/deploys/$CURRENT_GIT_HEAD_HASH
     if [ `ls -1 bin/ | wc -l` = 0 ]; then 
         client_result "Your codebase needs to contain an application. I.E. package main"
         exit 1
@@ -54,42 +66,46 @@ function build() {
     fi
 
     # Set the Go Application to bootstrap.
-    GOAPP=`ls -1 bin/`
+    export GOAPP=`ls -1 bin/`
     echo $GOAPP > $OPENSHIFT_GO_DIR/env/GOAPP
 
-    client_message "Go Application '$GOAPP' git build $CURRENT_GIT_HEAD was successful."
+    client_message "Go Application '$GOAPP' git build $CURRENT_GIT_HEAD_HASH was successful."
 
 }
 
 function deploy() {
-    echo
+    echo 
 }
 
 function post-deploy() {
-    echo
+    echo 
 }
 
 # Your cartridge and the packaged software needs to re-read their configuration information (this operation will only be called if your cartridge is running)
 function reload() {
-    echo
+    echo 
 }
 
 # Start the Go Application.
 function start() {
-
-    client_message "Starting Go application '$GOAPP' git build $CURRENT_GIT_HEAD ..."  
+    
+    # Bootstrap the Go Application build process.
+    update-configuration
+    pre-build
+    build 
     
     # Start the Go Application
-    nohup $OPENSHIFT_GO_DIR/deploys/$CURRENT_GIT_HEAD/bin/$GOAPP > $OPENSHIFT_GO_LOG_DIR/$GOAPP.log 
+    client_message "Starting Go application '$GOAPP' git build $CURRENT_GIT_HEAD_HASH ..." 
+    nohup $OPENSHIFT_GO_DIR/deploys/$CURRENT_GIT_HEAD_HASH/bin/$GOAPP > $OPENSHIFT_GO_LOG_DIR/$GOAPP.log 2>&1 &
 
     # Verify the Go Application is running.
     if [ "`pgrep $GOAPP`" ]; then 
-        client_result  "Go application '$GOAPP' git version $CURRENT_GIT_HEAD successfully started." > $OPENSHIFT_GO_LOG_DIR/$GOAPP.log 
+        client_result  "Go application '$GOAPP' git version $CURRENT_GIT_HEAD_HASH successfully started." > $OPENSHIFT_GO_LOG_DIR/$GOAPP.log 
+        exit 0
     else 
-        client_result "ERROR: Go application '$GOAPP' git version $CURRENT_GIT_HEAD failed to start." > $OPENSHIFT_GO_LOG_DIR/$GOAPP.log 
+        client_result "ERROR: Go application '$GOAPP' git version $CURRENT_GIT_HEAD_HASH failed to start." > $OPENSHIFT_GO_LOG_DIR/$GOAPP.log 
         exit 1
     fi
-
 }
 
 # Stop the Go Application.
@@ -108,10 +124,10 @@ function status() {
 
     # Verify the Go Application is running.
     if [ "`pgrep $GOAPP`" ]; then 
-        client_result  "Go application '$GOAPP' git version $CURRENT_GIT_HEAD is running." > $OPENSHIFT_GO_LOG_DIR/$GOAPP.log 
+        client_result  "Go application '$GOAPP' git version $CURRENT_GIT_HEAD_HASH is running." > $OPENSHIFT_GO_LOG_DIR/$GOAPP.log 
         exit 0
     else 
-        client_result "Go application '$GOAPP' git version $CURRENT_GIT_HEAD is not currently running." > $OPENSHIFT_GO_LOG_DIR/$GOAPP.log 
+        client_result "Go application '$GOAPP' git version $CURRENT_GIT_HEAD_HASH is not currently running." > $OPENSHIFT_GO_LOG_DIR/$GOAPP.log 
         exit 1
     fi
 }
@@ -119,11 +135,11 @@ function status() {
 # Clean up previous Go Application builds.
 function tidy() {
 
-    # Clean up previous application builds.
+     # Clean up previous application builds.
     client_message "Cleaning up previous builds of the application..."
     DIRARRAY=`ls -1 $OPENSHIFT_GO_DIR/deploys/`
     for dir in $DIRARRAY; do
-        if [ ! "$dir" = $CURRENT_GIT_HEAD ]; then
+        if [ ! "$dir" = $CURRENT_GIT_HEAD_HASH ]; then
 
             # Delete previous executables.
             rm -Rf $OPENSHIFT_GO_DIR/deploys/$dir/bin
@@ -132,44 +148,51 @@ function tidy() {
             rm -Rf $OPENSHIFT_GO_DIR/deploys/$dir/pkg
         fi
     done
-    client_message "Previous builds removed."
-
+    client_result "Previous builds removed."
 }
 
 # pre-snapshot - Prepare the cartridge for a snapshot, e.g. dump database to flat file.
 function pre-snapshot() {
-    echo
+    echo 
 }
 
 # post-snapshot - Clean up the cartridge after snapshot, e.g. remove database dump file
 function post-snapshot() {
-    echo
+    echo 
 }
 
 # pre-restore - Prepare the cartridge for restore
 function pre-restore() {
-    echo
+    echo 
 }
 
 # post-restore - Clean up the cartridge after being restored, load database with data from flat file
 function post-restore() {
-    echo
+    echo 
 }
 
 # Signal the packaged software to perform a thread dump
 function threaddump() {
-    echo
+    echo 
 }
 
 # Read Command Line Inputs.
 case "$1" in
-    start)               start       ;;
-    restart|graceful)    restart     ;;
-    graceful-stop|stop)  stop        ;;
-    status)              status      ;;
-    build)               build       ;;
-    pre-build)           pre-build   ;;
-    post-deploy)         post-deploy ;;
-    tidy)                tidy        ;;
+    update-configuration)   update-configuration ;;
+    pre-build)              pre-build ;;
+    build)                  build       ;;
+    deploy)                 deploy ;;
+    post-deploy)            post-deploy ;;
+    reload)                 reload ;;
+    start)                  start       ;;
+    stop)                   stop        ;;
+    restart)                restart     ;;
+    status)                 status      ;;
+    tidy)                   tidy        ;;
+    pre-snapshot)           pre-snapshot ;;
+    post-snapshot)          post-snapshot ;;
+    pre-restore)            pre-restore ;;
+    post-restore)           post-restore ;;
+    threaddump)             threaddump ;;
     *) exit 0;
 esac

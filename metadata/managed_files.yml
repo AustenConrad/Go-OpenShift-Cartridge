@@ -4,5 +4,3 @@ locked_files:
 - bin/*
 - metadata/
 - metadata/*
-- deploys/
-- deploys/*

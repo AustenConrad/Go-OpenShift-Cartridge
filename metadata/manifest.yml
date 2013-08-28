@@ -1,9 +1,9 @@
-Name: Go-OpenShift-Cartridge
-Cartridge-Short-Name: "GO"
+Name: goopenshiftcartridge
+Cartridge-Short-Name: GO
 Cartridge-Version: '1'
 Compatible-Versions: ['1']
-Cartridge-Vendor: "ConradResearch"
-Display-Name: "Go"
+Cartridge-Vendor: conradresearch
+Display-Name: Go 1.1
 Description: "Go is an open source programming environment that makes it easy to build simple, reliable, and efficient software."
 Version: '1.1'
 Versions: ['1.1']
@@ -16,10 +16,10 @@ Categories:
   - go
   - golang
   - web_framework
-Website: "http://golang.org"
+Website: http://golang.org
 Help-Topics:
-  "Go-OpenShift-Cartridge Github": "http://github.com/AustenConrad/Go-OpenShift-Cartridge"
-Cart-Date:
+  "Go-OpenShift-Cartridge Github": http://github.com/AustenConrad/Go-OpenShift-Cartridge
+Cart-Data:
   - Key: GOROOT
     Type: environment
     Description: "Golang's installation location."  
@@ -32,57 +32,26 @@ Cart-Date:
   - Key: GOAPP
     Type: environment
     Description: "The Go application to deploy."  
-  - Key: CURRENT_GIT_HEAD
+  - Key: OPENSHIFT_GO_LOG_DIR
+    Type: environment
+    Description: "The Go application's log directory." 
+  - Key: OPENSHIFT_GO_IP
+    Type: environment
+    Description: "The Go application's IP address." 
+  - Key: OPENSHIFT_GO_PORT
+    Type: environment
+    Description: "The Go application's port number." 
+  - Key: CURRENT_GIT_HEAD_HASH
     Type: environment
     Description: "The hash of the current git head. Each application build is built at deploys/$CURRENT_GIT_HEAD/ so that there are not clean up issues to deal with."  
-  - Key: OPENSHIFT_GO_PORT
-    Type: environment
-    Description: "Internal port to which the web-framework binds to."
-  - Key: OPENSHIFT_GO_IP
-    Type: environment
-    Description: "Internal IP to which the web-framework binds to."
-  - Key: OPENSHIFT_APP_DNS
-    Type: environment
-    Description: "Fully qualified domain name for the application."
-  - Key: OPENSHIFT_APP_NAME
-    Type: environment
-    Description: "Application name"
-  - Key: OPENSHIFT_APP_UUID
-    Type: environment
-    Description: "Unique ID which identified the application. Does not change between gears."
-  - Key: OPENSHIFT_GO_IP
-    Type: environment
-    Description: "The IP address your application will listen on."
-  - Key: OPENSHIFT_GO_PORT
-    Type: environment
-    Description: "The port your application will listen on."
-  - Key: OPENSHIFT_DATA_DIR
-    Type: environment
-    Description: "Directory to store application data files. Preserved across git-pushes. Not shared across gears."
-  - Key: OPENSHIFT_LOG_DIR
-    Type: environment
-    Description: "Directory to store application log files."
-  - Key: OPENSHIFT_REPO_DIR
-    Type: environment
-    Description: "Application root directory where application files reside. This directory is reset everytime you do a git-push"
-  - Key: OPENSHIFT_TMP_DIR
-    Type: environment
-    Description: "Directory to store application temporary files."
-  - Key: OPENSHIFT_GEAR_DNS
-    Type: environment
-    Description: "The fully-qualified domain name for this gear. This value changes between gears."
-  - Key: OPENSHIFT_GEAR_NAME
-    Type: environment
-    Description: "This gear's name. This value changes between gears."
-  - Key: OPENSHIFT_GEAR_UUID
-    Type: environment
-    Description: "Unique ID which identified the gear. This value changes between gears."
 Provides:
   - go-1.1
   - "go"
   - "golang"
   - "go(version) = 1.1"
 Publishes:
+  get-doc-root:
+    Type: "FILESYSTEM:doc-root"
   publish-http-url:
     Type: "NET_TCP:httpd-proxy-info"
   publish-gear-endpoint:
@@ -122,4 +91,3 @@ Endpoints:
       - Frontend: "/health"
         Backend: ""
         Options: { health: true }
-Additional-Control-Actions:

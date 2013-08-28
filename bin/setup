@@ -1,1 +1,13 @@
 #!/bin/bash
+
+# Exit on errors.
+set -e
+
+# Initialize variables.
+export GOVERSION=1.1.2
+echo $GOVERSION > $OPENSHIFT_GO_DIR/env/GOVERSION
+
+export OPENSHIFT_GO_LOG_DIR=$OPENSHIFT_GO_DIR/logs
+echo $OPENSHIFT_GO_LOG_DIR > $OPENSHIFT_GO_DIR/env/OPENSHIFT_GO_LOG_DIR
+
+exit 0

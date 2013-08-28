@@ -1,21 +1,32 @@
 #!/bin/bash
 
-# Initialize variables.
-export GOVERSION=1.1.2
-echo $GOVERSION > $OPENSHIFT_GO_DIR/env/GOVERSION
- 
-# Download the Go source for Linux amd64
+source $OPENSHIFT_CARTRIDGE_SDK_BASH # Can access client_message and client_result commands.
+
+# Exit on errors.
+set -e
+
+# Download the Go source for Linux amd64.
+client_result "Downloading Go version '$GOVERSION'..." 
 cd $OPENSHIFT_GO_DIR
 wget http://go.googlecode.com/files/go$GOVERSION.linux-amd64.tar.gz
 
 # Untar the source and change into it's directory.
+client_result "Installing Go version '$GOVERSION'..." 
 tar -xzf go$GOVERSION.linux-amd64.tar.gz
 rm go$GOVERSION.linux-amd64.tar.gz
 cd go
 
-# Add Go's bin to PATH
-PATH+=":`pwd`/bin"
-
 # Set the GOROOT
 export GOROOT=`pwd`	
 echo $GOROOT > $OPENSHIFT_GO_DIR/env/GOROOT
+client_result "Go version '$GOVERSION' installed." 
+
+# Verify that Go is in the PATH.
+if hash go 2>/dev/null; then 
+
+    # Add Go's bin to PATH
+    export PATH+=":$GOROOT/bin"
+
+fi
+
+exit 0
