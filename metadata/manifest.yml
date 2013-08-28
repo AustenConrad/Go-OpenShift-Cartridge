@@ -7,7 +7,7 @@ Display-Name: Go 1.1
 Description: "Go is an open source programming environment that makes it easy to build simple, reliable, and efficient software."
 Version: '1.1'
 Versions: ['1.1']
-Source-Url: "git@github.com:AustenConrad/Go-OpenShift-Cartridge.git"
+Source-Url: "https://github.com/AustenConrad/Go-Openshift-Cartridge/archive/master.zip"
 License: "The Golang BSD-style license."
 License-Url: "http://golang.org/LICENSE"
 Vendor: The Go Authors
